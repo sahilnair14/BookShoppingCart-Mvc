@@ -19,10 +19,10 @@ jobs:
         dotnet-version: '6.x' # Adjust according to your application's .NET version
 
     - name: Restore dependencies
-      run: dotnet restore BookShoppingCart-Mvc.sln
+      run: dotnet restore C:\inetpub\wwwroot\MyDemoApp\BookShoppingCart-Mvc
 
     - name: Build the project
-      run: dotnet publish BookShoppingCart-Mvc.sln -c Release -o ./published
+      run: dotnet publish C:\inetpub\wwwroot\MyDemoApp\BookShoppingCart-Mvc -c Release -o ./published
 
     - name: Copy files to Azure VM
       uses: appleboy/scp-action@v0.1.3
