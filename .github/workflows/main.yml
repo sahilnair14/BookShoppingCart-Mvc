@@ -28,7 +28,7 @@ jobs:
       run: |
         $sourcePath = "$(Get-Location)\published\*"
         $destinationPath = "C:\inetpub\wwwroot\MyDemoApp\"
-        $session = New-PSSession -HostName "${{ secrets.IIS_SERVER }}" -UserName "${{ secrets.IIS_USERNAME }}" -KeyFilePath "${{ secrets.IIS_PASSWORD }}"
+        $session = New-PSSession -HostName "40.82.198.47" -UserName "sahil" -KeyFilePath "Sahil1234567"
         Copy-Item -Path $sourcePath -Destination $destinationPath -ToSession $session
 
     - name: Restart IIS on Azure VM
