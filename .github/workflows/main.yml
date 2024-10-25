@@ -19,10 +19,10 @@ jobs:
         dotnet-version: '6.x' # Adjust according to your application's .NET version
 
     - name: Restore dependencies
-      run: dotnet restore BookShoppingCart-Mvc.csproj
+      run: dotnet restore BookShoppingCartMvcUI
 
     - name: Build the project
-      run: dotnet publish BookShoppingCart-Mvc.csproj -c Release -o ./published
+      run: dotnet publish BookShoppingCartMvcUI -c Release -o ./published
 
 
     - name: Copy files to Azure VM
