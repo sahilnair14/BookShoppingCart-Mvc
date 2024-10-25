@@ -31,7 +31,7 @@ jobs:
         username: ${{ secrets.IIS_USERNAME }}
         key: ${{ secrets.IIS_PASSWORD }}
         source: ./published/
-        target: 'C:\\inetpub\\wwwroot\\DemoApp' # Adjust path if needed
+        target: 'C:\\inetpub\\wwwroot\\MyDemoApp' # Adjust path if needed
 
     - name: Run remote command on Azure VM
       uses: appleboy/ssh-action@master
