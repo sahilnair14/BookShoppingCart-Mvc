@@ -28,10 +28,10 @@ jobs:
       run: |
         $sourcePath = "$(Get-Location)\published\*"
         $destinationPath = "C:\inetpub\wwwroot\MyDemoApp\"
-        $session = New-PSSession -HostName "40.82.198.47" -UserName "sahil" -KeyFilePath "Sahil1234567"
+        $session = New-PSSession -HostName "40.82.198.47" -UserName "sahil" -KeyFilePath "C:\Users\sahil\.ssh\id_rsa" # Ensure this path is correct
         Copy-Item -Path $sourcePath -Destination $destinationPath -ToSession $session
 
     - name: Restart IIS on Azure VM
       run: |
-        $session = New-PSSession -HostName "${{ secrets.IIS_SERVER }}" -UserName "${{ secrets.IIS_USERNAME }}" -KeyFilePath "${{ secrets.IIS_PASSWORD }}"
+        $session = New-PSSession -HostName "40.82.198.47" -UserName "sahil" -KeyFilePath "C:\Users\sahil\.ssh\id_rsa" # Ensure this path is correct
         Invoke-Command -Session $session -ScriptBlock { iisreset }
