@@ -19,27 +19,19 @@ jobs:
         dotnet-version: '6.x' # Adjust according to your application's .NET version
 
     - name: Restore dependencies
-      run: dotnet restore BookShoppingCartMvcUI
+      run: dotnet restore BookShoppingCartMvc.sln
 
     - name: Build the project
-      run: dotnet publish BookShoppingCartMvcUI -c Release -o ./published
-
+      run: dotnet publish BookShoppingCartMvc.sln -c Release -o ./published
 
     - name: Copy files to Azure VM
-      uses: appleboy/scp-action@v0.1.3
-      with:
-        host: ${{ secrets.IIS_SERVER }}
-        username: ${{ secrets.IIS_USERNAME }}
-        key: ${{ secrets.IIS_PASSWORD }}
-        source: ./published/
-        target: 'C:\\inetpub\\wwwroot\\MyDemoApp' # Adjust path if needed
+      run: |
+        $sourcePath = "$(Get-Location)\published\*"
+        $destinationPath = "C:\inetpub\wwwroot\MyDemoApp\"
+        $session = New-PSSession -HostName "${{ secrets.IIS_SERVER }}" -UserName "${{ secrets.IIS_USERNAME }}" -KeyFilePath "${{ secrets.IIS_PASSWORD }}"
+        Copy-Item -Path $sourcePath -Destination $destinationPath -ToSession $session
 
-    - name: Run remote command on Azure VM
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.IIS_SERVER }}
-        username: ${{ secrets.IIS_USERNAME }}
-        key: ${{ secrets.IIS_PASSWORD }}
-        script: |
-          # Restart IIS to apply changes
-          iisreset /restart
+    - name: Restart IIS on Azure VM
+      run: |
+        $session = New-PSSession -HostName "${{ secrets.IIS_SERVER }}" -UserName "${{ secrets.IIS_USERNAME }}" -KeyFilePath "${{ secrets.IIS_PASSWORD }}"
+        Invoke-Command -Session $session -ScriptBlock { iisreset }
