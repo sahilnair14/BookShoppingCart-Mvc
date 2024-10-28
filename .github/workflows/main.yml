@@ -21,16 +21,20 @@ jobs:
       - name: Publish .NET Application
         run: dotnet publish -c Release -o ./published
 
-      - name: Copy Files to IIS Server
-        run: |
-          $session = New-PSSession -ComputerName "20.5.249.244" -Credential (New-Object PSCredential("sahil", (ConvertTo-SecureString "Sahil@1234567" -AsPlainText -Force))) -Port 5986 -Authentication Default
-          Copy-Item -Path ./published/* -Destination "C:\inetpub\wwwroot\DefaultWebSite" -Recurse -ToSession $session
-          Remove-PSSession -Session $session
-        shell: pwsh
+      - name: Copy files via SSH password
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.IIS_SERVER }}
+          username: ${{ secrets.IIS_USERNAME }}
+          password: ${{ secrets.IIS_PASSWORD }}
+          port: 22
+          source: "./published/*"  # Copy all published files
+          target: "C:/inetpub/wwwroot/DefaultWebSite"  # Destination on the IIS server
+          shell: pwsh
 
       - name: Restart IIS
         run: |
-          $session = New-PSSession -ComputerName "20.5.249.244" -Credential (New-Object PSCredential("sahil", (ConvertTo-SecureString "Sahil@1234567" -AsPlainText -Force))) -Port 5986 -Authentication Default
+          $session = New-PSSession -ComputerName "${{ secrets.IIS_SERVER }}" -Credential (New-Object PSCredential("${{ secrets.IIS_USERNAME }}", (ConvertTo-SecureString "${{ secrets.IIS_PASSWORD }}" -AsPlainText -Force))) -Port 5986 -Authentication Default
           Invoke-Command -Session $session -ScriptBlock {
             Import-Module WebAdministration
             Restart-WebAppPool -Name "DefaultWebSite"  # Update if your app pool has a different name
