@@ -1,53 +1,41 @@
-name: Deploy to Azure VM IIS
+name: Deploy .NET Application to IIS
 
 on:
   push:
     branches:
-      - master
+      - main  # Change to your deployment branch if needed
 
 jobs:
-  build:
+  deploy:
     runs-on: windows-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout Code
+        uses: actions/checkout@v2
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '6.x' # Adjust according to your application's .NET version
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: '.net 8.0'  # Specify your .NET version
 
-    - name: Restore dependencies
-      run: dotnet restore BookShoppingCartMvc.sln
+      - name: Publish .NET Application
+        run: dotnet publish -c Release -o ./published
 
-    - name: Build the project
-      run: dotnet publish BookShoppingCartMvc.sln -c Release -o ./published
+      - name: Copy Files via WinRM
+        uses: ramyaprathyusha/Copy-Windows-File@v2
+        with:
+          source-path: ./published/
+          destination-path: C:\inetpub\wwwroot\DefaultWebSite  # Update this to your IIS application path
+          remote-computer: ${{ secrets.IIS_SERVER}}   # Replace with the IP address if not using secrets
+          remote-username: 'sahil'
+          remote-password: 'Sahil@1234567'
+          remote-port: 5985  # Default WinRM HTTP port
 
-    - name: Decode and Create SSH Key
-      run: |
-        # Create .ssh directory if it does not exist
-        $sshDir = "$HOME\.ssh"
-        if (-Not (Test-Path $sshDir)) {
-            New-Item -ItemType Directory -Path $sshDir
-        }
-        
-        # Decode the base64-encoded SSH key and create the private key file
-        $privateKey = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0KYjNCbGJuTnphQzFyWlhrdGRqRUFBQUFBQkc1dmJtVUFBQUFFYm05dVpRQUFBQUFBQUFBQkFBQUJGd0FBQUFkemMyZ3RjbgpOaEFBQUFBd0VBQVFBQUFRRUF5ditpZGdDWUxWK1A4bCs5Y0tFR005ekEyTHpBNWJIOFpPOWRaVTRZdXFuMFA3MWExTjBICm4wdllSVjhIbzFwZWFUb2RtRk95N1kwTlhHUWZkUndRb2ZiUzFueGl1cEE0bGNGYnRYYVJGbVlaVVNLMmRKcmF4RjltdGMKNDBUWmwvWEhyRzRpcWozTSs4VjFpdkEyYnFzcTdZVnMxSDVWT2xwUjRFYW8yVTA1enZkTUVHamtvL0o1MEw3THJBcTRkRwoxaVZlVUZCOEIrMjFjWjNOVTVYbit4OEdxTEVjUDdJa2xHZFBEVkZxb1dDY0N2ZHN4clF5blhoWWdRR09UUGZtUXRTOG5QClNlWU9HcndhWGVhdFFWaUlreVc0TEFqOGRZUkVzaGFOUlJ0c3NaZnlKc0Q3eitZRWUzdHJ6MTRhUmU4OXhScGxiOW9melMKV1FuRlJLOS94d0FBQThBY1JlZmZIRVhuM3dBQUFBZHpjMmd0Y25OaEFBQUJBUURLLzZKMkFKZ3RYNC95WDcxd29RWXozTQpEWXZNRGxzZnhrNzExbFRoaTZxZlEvdlZyVTNRZWZTOWhGWHdlaldsNXBPaDJZVTdMdGpRMWNaQjkxSEJDaDl0TFdmR0s2CmtEaVZ3VnUxZHBFV1pobFJJclowbXRyRVgyYTF6alJObVg5Y2VzYmlLcVBjejd4WFdLOERadXF5cnRoV3pVZmxVNldsSGcKUnFqWlRUbk85MHdRYU9TajhublF2c3VzQ3JoMGJXSlY1UVVId0g3YlZ4bmMxVGxlZjdId2Fvc1J3L3NpU1VaMDhOVVdxaApZSndLOTJ6R3RES2RlRmlCQVk1TTkrWkMxTHljOUo1ZzRhdkJwZDVxMUJXSWlUSmJnc0NQeDFoRVN5Rm8xRkcyeXhsL0ltCndQdlA1Z1I3ZTJ2UFhocEY3ejNGR21WdjJoL05KWkNjVkVyMy9IQUFBQUF3RUFBUUFBQVFFQXJKcG4zTVhzbnNmZWNVdU8KbkRHT1FKSzNOcEpud2Vad29MSVdTNGozNWQrVVdvMzZxWHUyZTIvVjJFWlJERWhPZGxKL3o0RjdaaGpFLzRYeWFYVVBmMgplTEpleGxWaFJDeUxLNzg3TjQ4ZjZtRUNMZjJJM0M3YTNnZXoxMW8zV2NvVm1UdWNKZnllU29VK3lJQXZDREpxTWNOOUljCkM1WHdCbEZibCs0Q1dWcFhYOGQxd2d3ekZrUHVuOHdMRitDVUdoUkRhLzFQanFPeUcwZExEVHdUVk50M3c4WnFVbWJtczUKOUFwZEVvTCtMN2FWSFY1Q2h4c2FPdUFONEJxUS95ckZJaS9ESkpuYko3SjNqUFlRVGhNdUtjSW94Ynk0TjZLT085YmdTVQpMSVpRUmV0d0dLV1pSdnJEQWlPajdNMWIvTUw3djMvZ1I0NzFPTHZNTHpQMVFRQUFBSUJwaVpiOEJVZDdGMDFDOTI4VG9zCi84STh1MzI5M1pva1MvV3AvVmNUeU9yNEZ5LytEK1ZFVmJuOHpINkI4MkJraksxV0N5TytSVXFudGNJdW0xYUhWTEJFL2gKQXJqVDZCb2dFdGk1Q1lzSzMvak42MUlFMTVHMlh0L05ORUNIeFhVOFVIT1BDc1N6czVGUTNqVFNFNHRzNmRDa05mOE5sdQpoVS9QWWgxSG5tcmdBQUFJRUE1bnNVYlZWNlBPbmpzWW9haHREOVFrWXo0TWE1N25vODhmbGI1ODRHcmhrNlhKcFpwaEgwCmo4MVJTbmk1N0VRNHNVNEZiYTF2ck8vRFRSWVRzZzh6dE0yRzR4VlljaDdYckxqTFprMFZ4Y1l0LzBIRGNtM25XMi9nK3AKYVJLdlV3QTFFTG4rOGJ5cW1KY3pLWENKY05iVC9Mb1RONWNjM01pZVhxNFdldDBra0FBQUNCQU9GNWxCaUxWTmgvUzR6NQo5ZkFsa2kxUEJLc1hVaTFIeGF3ZVF5ZGhRSC9mbFZTOUNQTFNQVXFRQ2tGK0xzdHlsaVFnTlUvN1lJbVorNjlHeUc5QmZVCmZFQ3ZIaXprSWdOVGFkSm5FcFd5U1lLa2xVbjJTcGlESkkzL09MSGxWb21Sa3Nuc3A5MkVSU3hxekN2blYralVaTVRJNk4KS2VIZWhRTXczcFpXbnNHUEFBQUFDbk5oYUdsc1FIWnRNREU9Ci0tLS0tRU5EIE9QRU5TU0ggUFJJVkFURSBLRVktLS0tLQo="))
-        [System.IO.File]::WriteAllText("$sshDir\id_rsa", $privateKey)
-        
-        # Set permissions for the private key file
-        icacls "$sshDir\id_rsa" /inheritance:r
-        icacls "$sshDir\id_rsa" /grant:r "$($env:USERNAME):(R,W)"
-
-    - name: Copy files to Azure VM
-      run: |
-        $sourcePath = "$(Get-Location)\published\*"
-        $destinationPath = "C:\inetpub\wwwroot\MyDemoApp\"
-        $session = New-PSSession -HostName "20.5.249.244" -UserName "sahil" -KeyFilePath "$HOME\.ssh\id_rsa"
-        Copy-Item -Path $sourcePath -Destination $destinationPath -ToSession $session
-
-    - name: Restart IIS on Azure VM
-      run: |
-        $session = New-PSSession -HostName "40.82.198.47" -UserName "sahil" -KeyFilePath "$HOME\.ssh\id_rsa"
-        Invoke-Command -Session $session -ScriptBlock { iisreset }
+      - name: Restart IIS
+        run: |
+          Invoke-Command -ComputerName ${{ secrets.IIS_SERVER }} -Credential (New-Object System.Management.Automation.PSCredential('sahil', (ConvertTo-SecureString 'Sahil@1234567' -AsPlainText -Force))) -ScriptBlock {
+            Import-Module WebAdministration
+            Restart-WebAppPool -Name "DefaultWebSite"  # Update "DemoApp" if your app pool has a different name
+          }
+        env:
+          AZURE_VM_IP: ${{ secrets.AZURE_VM_IP }}
