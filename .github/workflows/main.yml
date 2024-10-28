@@ -16,26 +16,24 @@ jobs:
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v2
         with:
-          dotnet-version: '.net 8.0'  # Specify your .NET version
+          dotnet-version: '8.0.x'  # Specify your .NET version
 
       - name: Publish .NET Application
         run: dotnet publish -c Release -o ./published
 
-      - name: Copy Files via WinRM
-        uses: ramyaprathyusha/Copy-Windows-File@v2
-        with:
-          source-path: ./published/
-          destination-path: C:\inetpub\wwwroot\DefaultWebSite  # Update this to your IIS application path
-          remote-computer: ${{ secrets.IIS_SERVER}}   # Replace with the IP address if not using secrets
-          remote-username: 'sahil'
-          remote-password: 'Sahil@1234567'
-          remote-port: 5985  # Default WinRM HTTP port
+      - name: Copy Files to IIS Server
+        run: |
+          $session = New-PSSession -ComputerName "20.5.249.244" -Credential (New-Object PSCredential("sahil", (ConvertTo-SecureString "Sahil@1234567" -AsPlainText -Force))) -Port 5985 -Authentication Default
+          Copy-Item -Path ./published/* -Destination "C:\inetpub\wwwroot\DefaultWebSite" -Recurse -ToSession $session
+          Remove-PSSession -Session $session
+        shell: pwsh
 
       - name: Restart IIS
         run: |
-          Invoke-Command -ComputerName ${{ secrets.IIS_SERVER }} -Credential (New-Object System.Management.Automation.PSCredential('sahil', (ConvertTo-SecureString 'Sahil@1234567' -AsPlainText -Force))) -ScriptBlock {
+          $session = New-PSSession -ComputerName "20.5.249.244" -Credential (New-Object PSCredential("sahil", (ConvertTo-SecureString "Sahil@1234567" -AsPlainText -Force))) -Port 5985 -Authentication Default
+          Invoke-Command -Session $session -ScriptBlock {
             Import-Module WebAdministration
-            Restart-WebAppPool -Name "DefaultWebSite"  # Update "DemoApp" if your app pool has a different name
+            Restart-WebAppPool -Name "DefaultWebSite"  # Update if your app pool has a different name
           }
-        env:
-          IIS_SERVER: ${{ secrets.IIS_SERVER }}
+          Remove-PSSession -Session $session
+        shell: pwsh
