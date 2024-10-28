@@ -38,4 +38,4 @@ jobs:
             Restart-WebAppPool -Name "DefaultWebSite"  # Update "DemoApp" if your app pool has a different name
           }
         env:
-          AZURE_VM_IP: ${{ secrets.AZURE_VM_IP }}
+          IIS_SERVER: ${{ secrets.IIS_SERVER }}
