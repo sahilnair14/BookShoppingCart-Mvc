@@ -1,39 +1,41 @@
-name: Deploy .NET Application to IIS
+name: Deploy to IIS on Windows Server
 
 on:
   push:
     branches:
-      - master  # Change to your deployment branch if needed
+      - main
 
 jobs:
   deploy:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Set up .NET Core
-        uses: actions/setup-dotnet@v2
-        with:
-          dotnet-version: '8.0.x'  # Specify your .NET version
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: '6.0.x'  # Replace with your .NET version
 
-      - name: Publish .NET Application
-        run: dotnet publish -c Release -o ./published
+    - name: Restore dependencies
+      run: dotnet restore BookShoppingCart-Mvc.sln
 
-      - name: Copy files to IIS Server
-        run: |
-          $session = New-PSSession -ComputerName "${{ secrets.IIS_SERVER }}" -Credential (New-Object PSCredential("${{ secrets.IIS_USERNAME }}", (ConvertTo-SecureString "${{ secrets.IIS_PASSWORD }}" -AsPlainText -Force))) -Port 5985 -Authentication Default
-          Copy-Item -Path ./published/* -Destination "C:\inetpub\wwwroot\DefaultWebSite" -Recurse -ToSession $session
-          Remove-PSSession -Session $session
-        shell: pwsh
+    - name: Build
+      run: dotnet build BookShoppingCart-Mvc.sln --configuration Release --no-restore
 
-      - name: Restart IIS
-        run: |
-          $session = New-PSSession -ComputerName "${{ secrets.IIS_SERVER }}" -Credential (New-Object PSCredential("${{ secrets.IIS_USERNAME }}", (ConvertTo-SecureString "${{ secrets.IIS_PASSWORD }}" -AsPlainText -Force))) -Port 5985 -Authentication Default
-          Invoke-Command -Session $session -ScriptBlock {
-            Import-Module WebAdministration
-            Restart-WebAppPool -Name "DefaultWebSite"  # Update if your app pool has a different name
-          }
-          Remove-PSSession -Session $session
-        shell: pwsh
+    - name: Publish
+      run: dotnet publish BookShoppingCart-Mvc/BookShoppingCart-Mvc.csproj --configuration Release --output ./publish
+
+    - name: Deploy to IIS
+      uses: ramyaprathyusha/copy-windows-file@v1.0.0
+      with:
+        source-dir: ./publish
+        destination: '\\YOUR_VM_IP\C$\inetpub\wwwroot\DemoApp'  # Change this to your desired destination
+        username: ${{ secrets.IIS_USERNAME }}  # Set this secret in your GitHub repo
+        password: ${{ secrets.IIS_PASSWORD }}  # Set this secret in your GitHub repo
+
+    - name: Restart IIS
+      run: |
+        Invoke-Expression "C:\Windows\System32\iisreset.exe"
+      shell: pwsh
